@@ -208,7 +208,7 @@ export function withUserName(Component: ComponentType<any>): ComponentType<any> 
     }, []);
 
     const name =
-      (user?.metadata as any)?.display_name ||
+      (user?.metadata as any)?.full_name ||
       user?.email ||
       "Guest";
 

@@ -78,6 +78,15 @@ All tables have RLS enabled. The following policies are applied:
 | Users can view own rules                | SELECT    | `auth.uid() = user_id`               |
 | Admins have full access to user_rules   | ALL       | User's role is `admin`               |
 
+## Enabling Email OTP in Supabase
+
+Before setting up SMTP, make sure OTP sign-in is enabled:
+
+1. In your Supabase dashboard, go to **Authentication > Providers > Email**.
+2. Ensure **Enable Email provider** is toggled on.
+3. Ensure **Confirm email** is toggled **off** (OTP codes handle verification).
+4. Optionally adjust the OTP expiry time (default: 60 seconds).
+
 ## Setting Up Resend as Supabase SMTP Provider
 
 Supabase uses SMTP to send OTP emails. To use Resend:
@@ -85,7 +94,7 @@ Supabase uses SMTP to send OTP emails. To use Resend:
 1. Go to your [Resend dashboard](https://resend.com/domains) and verify a domain.
 2. Generate an API key with sending permissions.
 3. In your Supabase dashboard, go to **Authentication > Email Templates** to customize your OTP email (optional).
-4. Go to **Settings > Authentication > SMTP Settings** and toggle **Enable Custom SMTP**.
+4. Go to **Project Settings > Authentication > SMTP Settings** and toggle **Enable Custom SMTP**.
 5. Enter the following settings:
 
 | Setting         | Value                        |

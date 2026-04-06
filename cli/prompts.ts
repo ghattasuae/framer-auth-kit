@@ -66,16 +66,16 @@ export async function runPrompts(): Promise<ProjectConfig> {
         }),
 
       backend: () =>
-        p.select({
+        p.select<{ value: string; label: string; hint: string }[], string>({
           message: "Choose your backend",
           options: [
             {
-              value: "cloudflare" as const,
+              value: "cloudflare",
               label: "Cloudflare Worker",
               hint: "Edge-first, globally distributed",
             },
             {
-              value: "nextjs" as const,
+              value: "nextjs",
               label: "Next.js",
               hint: "App Router route handlers",
             },
@@ -85,7 +85,7 @@ export async function runPrompts(): Promise<ProjectConfig> {
       outputDir: ({ results }) =>
         p.text({
           message: "Output directory",
-          defaultValue: `./framer-auth-${results.projectName}`,
+          initialValue: `./framer-auth-${results.projectName}`,
           placeholder: `./framer-auth-${results.projectName}`,
         }),
     },
@@ -104,7 +104,7 @@ export async function runPrompts(): Promise<ProjectConfig> {
     supabaseUrl: answers.supabaseUrl.trim(),
     supabaseAnonKey: answers.supabaseAnonKey.trim(),
     resendApiKey: answers.resendApiKey.trim(),
-    backend: answers.backend,
-    outputDir: answers.outputDir.trim(),
+    backend: answers.backend as "cloudflare" | "nextjs",
+    outputDir: String(answers.outputDir).trim(),
   };
 }

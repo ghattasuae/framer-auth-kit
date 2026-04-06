@@ -23,16 +23,20 @@ cd backend
 npm install
 ```
 
-## Step 2: Configure ALLOWED_ORIGIN
+## Step 2: Configure Environment Variables
 
-Open `wrangler.toml` and set `ALLOWED_ORIGIN` to your Framer site's domain:
+Open `wrangler.toml` and set the following variables:
 
 ```toml
 [vars]
 ALLOWED_ORIGIN = "https://your-framer-site.com"
+COOKIE_DOMAIN = "your-framer-site.com"
 ```
 
-This controls the CORS `Access-Control-Allow-Origin` header. It must match your Framer site's URL exactly (no trailing slash).
+| Variable         | Description                                                                 |
+|------------------|-----------------------------------------------------------------------------|
+| `ALLOWED_ORIGIN` | Your Framer site URL (for CORS). Must match exactly, no trailing slash.     |
+| `COOKIE_DOMAIN`  | The domain for session cookies. Must cover both your backend and Framer site. |
 
 ## Step 3: Set Secrets
 

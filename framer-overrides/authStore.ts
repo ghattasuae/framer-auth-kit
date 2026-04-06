@@ -6,8 +6,8 @@ const BACKEND_URL = "YOUR_BACKEND_URL"
 interface UserObject {
     id: string
     email: string
-    name: string
     role: string
+    metadata: Record<string, any>
 }
 
 interface AuthState {

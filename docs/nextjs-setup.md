@@ -36,14 +36,16 @@ SUPABASE_URL=https://xxxx.supabase.co
 SUPABASE_ANON_KEY=eyJhb...
 RESEND_API_KEY=re_...
 ALLOWED_ORIGIN=https://your-framer-site.com
+COOKIE_DOMAIN=your-framer-site.com
 ```
 
-| Variable            | Description                                   |
-|---------------------|-----------------------------------------------|
-| `SUPABASE_URL`      | Your Supabase project URL                     |
-| `SUPABASE_ANON_KEY` | The public anon key from Supabase             |
-| `RESEND_API_KEY`    | Your Resend API key                           |
-| `ALLOWED_ORIGIN`    | Your Framer site URL (for CORS)               |
+| Variable            | Description                                                                  |
+|---------------------|------------------------------------------------------------------------------|
+| `SUPABASE_URL`      | Your Supabase project URL                                                    |
+| `SUPABASE_ANON_KEY` | The public anon key from Supabase                                            |
+| `RESEND_API_KEY`    | Your Resend API key                                                          |
+| `ALLOWED_ORIGIN`    | Your Framer site URL (for CORS). Must match exactly, no trailing slash.      |
+| `COOKIE_DOMAIN`     | The domain for session cookies. Must cover both your backend and Framer site. |
 
 ## Step 3: Run Locally
 
@@ -57,7 +59,7 @@ The API will be available at `http://localhost:3000/api/auth/...`.
 
 1. Push the backend directory to a Git repository.
 2. Import the repository in the [Vercel dashboard](https://vercel.com/new).
-3. Add the environment variables (`SUPABASE_URL`, `SUPABASE_ANON_KEY`, `RESEND_API_KEY`, `ALLOWED_ORIGIN`) in the Vercel project settings under **Settings > Environment Variables**.
+3. Add the environment variables (`SUPABASE_URL`, `SUPABASE_ANON_KEY`, `RESEND_API_KEY`, `ALLOWED_ORIGIN`, `COOKIE_DOMAIN`) in the Vercel project settings under **Settings > Environment Variables**.
 4. Deploy.
 
 Use the production URL as `BACKEND_URL` in your Framer overrides.

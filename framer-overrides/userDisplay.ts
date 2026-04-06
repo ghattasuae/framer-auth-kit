@@ -11,7 +11,7 @@ function createDisplayOverride(displayField: string): () => Override {
 
         const fieldMap: Record<string, string> = {
             email: user.email ?? "",
-            name: user.name ?? "",
+            name: user.metadata?.full_name ?? user.email ?? "",
             role: user.role ?? "",
         }
 

@@ -28,7 +28,7 @@ export function printSuccess(outputDir: string): void {
   console.log("");
   console.log(
     chalk.white(
-      "  1. Run the SQL migration in your Supabase dashboard"
+      `  1. Run the SQL migration in your Supabase dashboard (${outputDir}/supabase/migrations/001_auth_setup.sql)`
     )
   );
   console.log(

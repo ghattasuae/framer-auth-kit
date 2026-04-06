@@ -302,19 +302,19 @@ export default {
 
     try {
       if (pathname === "/auth/send-otp" && request.method === "POST") {
-        return handleSendOtp(request, env);
+        return await handleSendOtp(request, env);
       }
 
       if (pathname === "/auth/verify-otp" && request.method === "POST") {
-        return handleVerifyOtp(request, env);
+        return await handleVerifyOtp(request, env);
       }
 
       if (pathname === "/auth/session" && request.method === "GET") {
-        return handleSession(request, env);
+        return await handleSession(request, env);
       }
 
       if (pathname === "/auth/logout" && request.method === "POST") {
-        return handleLogout(request, env);
+        return await handleLogout(request, env);
       }
 
       return jsonResponse({ error: "Not found" }, 404, env.ALLOWED_ORIGIN);
