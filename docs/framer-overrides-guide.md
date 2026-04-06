@@ -257,6 +257,15 @@ Wraps a component and hides it if the user is not authenticated. While the auth 
 - Apply `withAuth` to the outermost frame of a page for best results. If applied to a child element, only that element will be hidden.
 - The component re-renders reactively when auth state changes (e.g., after login or logout).
 
+### Example: Protecting a dashboard
+
+On your `/dashboard` page in Framer:
+
+1. Select the outermost page frame on the canvas.
+2. Apply the `withAuth` override to it.
+3. Unauthenticated users will see nothing in that frame.
+4. Optionally, apply `withAuthRedirect` to a separate element on the same page to also redirect unauthenticated users to `/login`.
+
 ---
 
 ## userDisplay.ts -- Showing User Information
@@ -268,14 +277,14 @@ Wraps a component and hides it if the user is not authenticated. While the auth 
 Replaces a text element's content with the user's email address.
 
 - If the user is logged in: displays `user.email` (e.g., `"jane@example.com"`)
-- If the user is not logged in: displays `"Not signed in"`
+- If the user is not logged in: displays an empty string
 
 #### `withUserName`
 
 Replaces a text element's content with the user's display name.
 
-- If the user is logged in: displays `user.metadata.full_name` (from the Supabase profiles table)
-- If `full_name` is not set: falls back to the user's email
+- If the user is logged in and `metadata.full_name` exists: displays the full name (e.g., `"Jane Smith"`)
+- If the user is logged in but `full_name` is not set: falls back to the user's email
 - If the user is not logged in: displays `"Guest"`
 
 ### How to apply in Framer
@@ -285,24 +294,14 @@ Replaces a text element's content with the user's display name.
 3. Select `withUserEmail` or `withUserName`
 4. The text content will be replaced dynamically based on auth state
 
+The override completely replaces whatever text you have in the element on the canvas. Set placeholder text (like "user@example.com" or "User Name") so the element is visible during design -- the override will replace it at runtime.
+
 ### Examples
 
 | Override | User logged in (full_name = "Jane Smith") | User logged in (no full_name) | User not logged in |
 |----------|-------------------------------------------|-------------------------------|-------------------|
-| `withUserEmail` | `jane@example.com` | `jane@example.com` | `Not signed in` |
+| `withUserEmail` | `jane@example.com` | `jane@example.com` | (empty) |
 | `withUserName` | `Jane Smith` | `jane@example.com` | `Guest` |
-
-### Setting full_name
-
-The `full_name` field comes from the `profiles` table in Supabase. It's included in the user's `metadata` when returned by the backend. To set it:
-
-```sql
-UPDATE public.profiles
-SET full_name = 'Jane Smith'
-WHERE email = 'jane@example.com';
-```
-
-Or allow users to update it via a profile settings page.
 
 ---
 
@@ -312,7 +311,7 @@ Or allow users to update it via a profile settings page.
 
 #### `withAuthRedirect`
 
-Redirects **unauthenticated** users to the login page. Apply this to any protected page.
+Redirects **unauthenticated** users to the login page. Apply this to protected pages.
 
 - Waits for the auth state to be initialized (no redirect during loading)
 - If `state.initialized && !state.loading && !state.user` -- redirects to `LOGIN_PATH`
@@ -324,13 +323,20 @@ Redirects **authenticated** users away from the login page. Apply this to your l
 
 - Waits for the auth state to be initialized
 - If `state.initialized && !state.loading && state.user` -- redirects to `"/"`
-- If the user is not authenticated -- does nothing, renders the component normally
+- If the user is not authenticated -- does nothing, renders the component normally (shows the login form)
 
 ### How to apply in Framer
 
 1. Select the page frame (outermost element) on your protected page
 2. In **Code Overrides**, select `withAuthRedirect`
 3. For the login page, select `withLogoutRedirect` instead
+
+### No-flash guarantee
+
+Both overrides check `state.initialized` before acting. On first page load, the auth store fires `checkSession()` which is asynchronous. Until that check completes, `initialized` remains `false` and neither override will redirect. This prevents:
+
+- Briefly showing the login page before redirecting a logged-in user away
+- Briefly showing protected content before redirecting a logged-out user to login
 
 ### Avoiding redirect loops
 
@@ -344,7 +350,7 @@ Be careful not to create circular redirects:
 
 ## Building a Login Form
 
-Here's how to build a complete login flow in Framer using the auth store functions:
+Here is how to build a complete login flow in Framer using the auth store functions.
 
 ### Step 1: Create the login page layout
 
@@ -441,13 +447,31 @@ export function LoginForm() {
 
 Drag the `LoginForm` code component onto your `/login` page in Framer.
 
-### Step 4: Add withLogoutRedirect
+### Step 4: Show the OTP input after sending
+
+The example above handles this with the `step` state variable. When `sendOtp` succeeds, it switches from the email form to the OTP form.
+
+### Step 5: Handle verification
+
+When the user enters the 6-digit code and clicks "Verify", `verifyOtp` is called. On success:
+
+- The auth store updates automatically (all subscribers are notified).
+- The login form redirects to `/dashboard` via `window.location.href`.
+- Alternatively, if you have `withLogoutRedirect` on the login page, it will detect the user is now authenticated and redirect automatically.
+
+### Step 6: Show errors
+
+If `sendOtp` or `verifyOtp` returns `{ success: false, error: "..." }`, display the error message to the user. Common errors include "Invalid or expired OTP" and rate-limiting messages.
+
+### Step 7: Add withLogoutRedirect
 
 Apply `withLogoutRedirect` to the login page's outermost frame. This ensures that already-authenticated users are redirected away from the login page.
 
 ---
 
 ## Building a Logout Button
+
+### As a code component
 
 Create a code component for the logout action:
 
@@ -470,19 +494,50 @@ export function LogoutButton() {
 
 Add this component to your navigation bar, settings page, or wherever you want the logout option.
 
+### As a code override
+
+If you prefer to use an existing Framer-designed button, create a code override instead:
+
+```tsx
+import type { ComponentType } from "react";
+import { logout } from "./authStore";
+
+export function withLogout(Component: ComponentType): ComponentType {
+  return (props: any) => {
+    const handleClick = async () => {
+      await logout();
+      window.location.href = "/login";
+    };
+
+    return <Component {...props} onClick={handleClick} />;
+  };
+}
+```
+
+Apply the `withLogout` override to any button element on your canvas. When clicked, it calls `logout()` and redirects to the login page.
+
 ---
 
-## Putting It All Together
+## Combining Overrides
 
-Here's a typical page configuration:
+### Typical page setup
+
+Here is how overrides are typically applied across a Framer site:
 
 | Page | Overrides Applied | Behavior |
 |------|-------------------|----------|
 | **Login page** (`/login`) | `withLogoutRedirect` on page frame | If already logged in, redirects to `/`. Contains the LoginForm component. |
-| **Dashboard** (`/dashboard`) | `withAuth` on page frame + `withAuthRedirect` on page frame | Hidden + redirects to `/login` if not authenticated. Visible if authenticated. |
+| **Dashboard** (`/dashboard`) | `withAuth` on content frame + `withAuthRedirect` on page frame | Hidden + redirects to `/login` if not authenticated. Visible if authenticated. |
 | **Profile page** (`/profile`) | `withAuth` + `withAuthRedirect` | Same as dashboard. Use `withUserEmail` or `withUserName` on text elements to show user info. |
 | **Public pages** (`/`, `/about`) | None, or only `withUserEmail` on optional text | Accessible to everyone. Optionally show user email if logged in. |
-| **Navigation bar** | `withUserEmail` on a text element | Shows user email when logged in, "Not signed in" otherwise. Contains LogoutButton component. |
+| **Navigation bar** | `withUserEmail` on a text element | Shows user email when logged in. Contains LogoutButton component. |
+
+### Override stacking
+
+Framer allows **one override per element**. If you need both `withAuth` and `withAuthRedirect` behavior on the same page, apply them to different elements:
+
+- `withAuthRedirect` on the outermost page frame (handles the redirect).
+- `withAuth` on the inner content frame (hides content as a fallback while the redirect happens).
 
 ### Complete example flow
 
@@ -498,13 +553,50 @@ Here's a typical page configuration:
 
 ## Troubleshooting
 
-| Issue | Cause | Fix |
-|-------|-------|-----|
-| **"Not signed in" showing everywhere** | `API_BASE` in `authStore.ts` is incorrect or still the placeholder | Set `API_BASE` to your actual deployed backend URL |
-| **Redirect loop between login and dashboard** | `withAuthRedirect` applied to login page instead of `withLogoutRedirect` | Use `withLogoutRedirect` on login, `withAuthRedirect` on protected pages |
-| **CORS errors in browser console** | Backend `ALLOWED_ORIGIN` doesn't match Framer site URL | Set `ALLOWED_ORIGIN` to exact Framer URL (with `https://`, no trailing slash) |
-| **Cookies not being set / session always null** | Backend and Framer site on different domains, or not using HTTPS | Both must use HTTPS. Set `COOKIE_DOMAIN` to a shared parent domain. Consider adding a custom domain. |
-| **Override not appearing in Framer's dropdown** | File not saved, or function not exported | Ensure the function is exported (`export function withAuth...`) and the file is saved |
-| **Import errors in Framer** | File names don't match import paths | Check that file names are exactly `authStore`, `withAuth`, `userDisplay`, `authRedirect` (case-sensitive) |
-| **Flash of protected content** | `withAuth` applied to a child element instead of the page frame | Apply `withAuth` to the outermost frame of the page |
-| **User name shows email instead of name** | `full_name` not set in profiles table | Update the user's profile: `UPDATE profiles SET full_name = 'Name' WHERE email = '...'` |
+### "Not signed in" showing everywhere
+
+**Cause:** `API_BASE` in `authStore.ts` is incorrect or still set to the placeholder value.
+
+**Fix:** Set `API_BASE` to your actual deployed backend URL. Open the browser developer console and check for network errors on the `/auth/session` request. Visit `{API_BASE}/auth/session` directly in your browser to verify the backend is responding.
+
+### Redirect loops between login and dashboard
+
+**Cause:** `withAuthRedirect` is applied to the login page instead of `withLogoutRedirect`.
+
+**Fix:** The login page should only have `withLogoutRedirect` (redirects logged-in users away). Protected pages should only have `withAuthRedirect` (redirects logged-out users to login). Never put both on the same page.
+
+### CORS errors in the browser console
+
+**Cause:** The backend's `ALLOWED_ORIGIN` environment variable does not match your Framer site's URL.
+
+**Fix:** Set `ALLOWED_ORIGIN` to the exact Framer site URL, including the protocol (`https://`) and without a trailing slash. For example: `https://your-site.framer.app`. If you are using a custom domain with Framer, use the custom domain URL, not the `.framer.app` URL.
+
+### Cookies not being set or session always null
+
+**Cause:** The backend and Framer site are on different domains without proper cookie configuration, or one of them is not using HTTPS.
+
+**Fix:** Both the backend and Framer site must use HTTPS. Session cookies are set with `SameSite=None; Secure; HttpOnly`, which requires HTTPS on both ends. If you are developing locally, cookies will not work over `http://localhost`. Some browsers also block third-party cookies by default -- consider using a subdomain of your main domain for the backend (e.g., site at `app.example.com`, backend at `auth.example.com`).
+
+### Flash of protected content before redirect
+
+**Cause:** `withAuth` is not applied, or is applied to a child element instead of the page frame.
+
+**Fix:** Apply `withAuth` to the outermost frame of the protected page. This hides all content while the session check is in progress and while the redirect is happening. Using `withAuthRedirect` alone may show a brief flash because the redirect takes a moment to execute.
+
+### Override not appearing in Framer's dropdown
+
+**Cause:** The file is not saved, or the function is not exported correctly.
+
+**Fix:** Ensure the override function uses `export` (e.g., `export function withAuth...`). Save the file. In some Framer versions, you need to create the file specifically as a "New Override" rather than a generic code file.
+
+### Import errors in Framer
+
+**Cause:** File names do not match the import paths.
+
+**Fix:** Check that file names are exactly `authStore`, `withAuth`, `userDisplay`, `authRedirect` (case-sensitive). All files must be in the same Code section level in Framer's Assets panel.
+
+### User name shows email instead of actual name
+
+**Cause:** The `full_name` field is not set in the user's Supabase metadata.
+
+**Fix:** The `withUserName` override reads `user.metadata.full_name`. If this field is not populated, it falls back to the email address. To set it, update the user's profile in Supabase or add a profile settings page where users can enter their name.
