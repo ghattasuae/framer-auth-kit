@@ -1,0 +1,26 @@
+{
+  "name": "framer-auth-kit",
+  "version": "1.0.0",
+  "description": "Self-hosted auth for Framer sites. Supabase + Resend + your backend.",
+  "bin": {
+    "framer-auth-kit": "./cli/dist/index.js"
+  },
+  "scripts": {
+    "build": "tsup cli/index.ts --format esm --out-dir cli/dist",
+    "dev": "tsx cli/index.ts"
+  },
+  "dependencies": {
+    "@clack/prompts": "^0.7.0",
+    "chalk": "^5.3.0",
+    "fs-extra": "^11.2.0"
+  },
+  "devDependencies": {
+    "@types/fs-extra": "^11.0.4",
+    "tsup": "^8.0.0",
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.0"
+  },
+  "keywords": ["framer", "auth", "supabase", "resend", "cloudflare", "nextjs"],
+  "author": "Proofly",
+  "license": "MIT"
+}
